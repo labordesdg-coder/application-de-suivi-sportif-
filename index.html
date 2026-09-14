@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0f14">
+  <title>SportTrack — Suivi sportif</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-dot"></span>SportTrack</div>
+    <nav>
+      <button class="nav-btn active" data-page="dashboard">🏠 <span>Accueil</span></button>
+      <button class="nav-btn" data-page="planning">📅 <span>Planning</span></button>
+      <button class="nav-btn" data-page="workouts">🏋️ <span>Séances</span></button>
+      <button class="nav-btn" data-page="creatine">💊 <span>Créatine</span></button>
+      <button class="nav-btn" data-page="progress">📈 <span>Progression</span></button>
+      <button class="nav-btn" data-page="history">📝 <span>Historique</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="nav-btn" id="exportBtn">⬇️ <span>Exporter</span></button>
+      <label class="import-btn">⬆️ <span>Importer</span><input type="file" id="importInput" accept=".json"></label>
+      <button class="nav-btn danger" id="resetBtn">🗑️ <span>Réinitialiser</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">TON SUIVI SPORTIF</p>
+        <h1 id="pageTitle">Tableau de bord</h1>
+      </div>
+      <div class="today-chip" id="todayChip"></div>
+    </header>
+
+    <section class="page active" id="dashboard">
+      <div class="hero">
+        <div>
+          <span class="badge">OBJECTIF DU JOUR</span>
+          <h2>Construis ta progression,<br><strong>jour après jour.</strong></h2>
+          <p>Enregistre tes séances, tes performances et ta créatine. Tes données restent sauvegardées sur cet appareil.</p>
+        </div>
+        <div class="hero-score">
+          <div class="ring" id="weekRing"><span id="weekPercent">0%</span></div>
+          <small>semaine</small>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat"><span>⚡ Séances</span><strong id="statSessions">0</strong><small>cette semaine</small></article>
+        <article class="stat"><span>💊 Créatine</span><strong id="statCreatine">0/7</strong><small>jours cette semaine</small></article>
+        <article class="stat"><span>🏋️ Volume</span><strong id="statVolume">0</strong><small>kg cette semaine</small></article>
+        <article class="stat"><span>🔥 Série</span><strong id="statStreak">0</strong><small>jours consécutifs</small></article>
+      </div>
+
+      <div class="two-col">
+        <article class="card">
+          <div class="card-head"><div><h3>Aujourd'hui</h3><p id="todayLabel"></p></div><button class="small-btn" onclick="openDayModal(todayISO())">+ Ajouter</button></div>
+          <div id="todayTasks" class="task-list"></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><div><h3>Évolution du poids</h3><p>30 derniers jours</p></div></div>
+          <div class="chart-box"><canvas id="weightChart"></canvas></div>
+        </article>
+      </div>
+
+      <article class="card">
+        <div class="card-head"><div><h3>Dernières performances</h3><p>Ton journal d'entraînement</p></div><button class="small-btn" onclick="showPage('progress')">Voir tout</button></div>
+        <div id="recentEntries" class="entries"></div>
+      </article>
+    </section>
+
+    <section class="page" id="planning">
+      <div class="section-intro">
+        <div><p class="eyebrow">ORGANISATION</p><h2>Ton planning</h2><p>Choisis un jour et ajoute ce que tu dois faire.</p></div>
+        <button class="primary-btn" onclick="openDayModal(selectedDate)">＋ Ajouter une activité</button>
+      </div>
+      <div class="calendar-wrap card">
+        <div class="calendar-head"><button class="icon-btn" onclick="changeMonth(-1)">‹</button><h3 id="calendarMonth"></h3><button class="icon-btn" onclick="changeMonth(1)">›</button></div>
+        <div class="weekdays"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h3 id="selectedDateTitle"></h3><p>Activités et créatine</p></div></div>
+        <div id="selectedTasks" class="task-list"></div>
+      </div>
+    </section>
+
+    <section class="page" id="workouts">
+      <div class="section-intro">
+        <div><p class="eyebrow">PROGRAMMATION</p><h2>Mes séances</h2><p>Range tes exercices, séries, reps et charges par jour.</p></div>
+        <button class="primary-btn" onclick="openWorkoutModal()">＋ Créer une séance</button>
+      </div>
+      <div id="workoutDays" class="workout-days"></div>
+    </section>
+
+    <section class="page" id="creatine">
+      <div class="section-intro">
+        <div><p class="eyebrow">HABITUDE QUOTIDIENNE</p><h2>Suivi créatine</h2><p>Coche chaque jour ta prise et garde ta série.</p></div>
+      </div>
+      <div class="card creatine-card">
+        <div class="creatine-summary"><div class="big-pill" id="creatineCount">0/7</div><div><h3>Cette semaine</h3><p id="creatineStreakText">Commence ta série aujourd'hui.</p></div></div>
+        <div class="creatine-calendar" id="creatineCalendar"></div>
+      </div>
+    </section>
+
+    <section class="page" id="progress">
+      <div class="section-intro">
+        <div><p class="eyebrow">DONNÉES</p><h2>Ma progression</h2><p>Compare tes performances dans le temps.</p></div>
+        <button class="primary-btn" onclick="openMetricModal()">＋ Enregistrer une performance</button>
+      </div>
+      <div class="tabs"><button class="period-tab active" data-period="week">Semaine</button><button class="period-tab" data-period="month">Mois</button><button class="period-tab" data-period="year">Année</button></div>
+      <div class="progress-grid">
+        <article class="card large-chart"><div class="card-head"><div><h3>Poids</h3><p id="periodLabel">Cette semaine</p></div></div><div class="chart-box tall"><canvas id="progressChart"></canvas></div></article>
+        <article class="card"><div class="card-head"><div><h3>Performances</h3><p>Derniers relevés</p></div></div><div id="metricList" class="metric-list"></div></article>
+      </div>
+    </section>
+
+    <section class="page" id="history">
+      <div class="section-intro">
+        <div><p class="eyebrow">JOURNAL</p><h2>Historique</h2><p>Retrouve toutes tes séances et mesures.</p></div>
+        <button class="primary-btn" onclick="openMetricModal()">＋ Nouvelle entrée</button>
+      </div>
+      <article class="card">
+        <div class="filters"><input id="historySearch" type="search" placeholder="Rechercher une activité..."><select id="historyFilter"><option value="all">Tout afficher</option><option value="workout">Séances</option><option value="metric">Performances</option></select></div>
+        <div id="historyList" class="history-list"></div>
+      </article>
+    </section>
+  </main>
+
+  <div class="modal hidden" id="dayModal">
+    <div class="modal-box">
+      <button class="close" onclick="closeModal('dayModal')">×</button>
+      <p class="eyebrow">PLANNING</p><h2 id="dayModalTitle">Ajouter une activité</h2>
+      <form id="dayForm">
+        <input type="hidden" id="activityDate">
+        <label>Activité<input id="activityName" required placeholder="Ex : Sprint 10 m, musculation, rugby..."></label>
+        <div class="form-row"><label>Type<select id="activityType"><option>Musculation</option><option>Rugby</option><option>Course</option><option>Pliométrie</option><option>Récupération</option><option>Autre</option></select></label><label>Durée (min)<input id="activityDuration" type="number" min="0" placeholder="60"></label></div>
+        <label>Notes<textarea id="activityNotes" placeholder="Séries, répétitions, sensations..."></textarea></label>
+        <label class="check-line"><input type="checkbox" id="creatineCheck"> 💊 Créatine prise aujourd'hui</label>
+        <button class="primary-btn full" type="submit">Enregistrer</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="workoutModal">
+    <div class="modal-box wide">
+      <button class="close" onclick="closeModal('workoutModal')">×</button>
+      <p class="eyebrow">SÉANCE</p><h2>Organiser une séance</h2>
+      <form id="workoutForm">
+        <label>Jour<input id="workoutDate" type="date" required></label>
+        <label>Nom de la séance<input id="workoutName" required placeholder="Ex : Explosivité + jambes"></label>
+        <label>Exercices<textarea id="workoutExercises" required placeholder="Exemple :
+Squat — 4 × 6 — 90 kg
+Développé couché — 4 × 8 — 70 kg
+Box jump — 4 × 5
+Sprint 10 m — 6 × 1"></textarea></label>
+        <label>Objectif / notes<textarea id="workoutNotes" placeholder="Objectif, temps de repos, sensations..."></textarea></label>
+        <button class="primary-btn full" type="submit">Enregistrer la séance</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="metricModal">
+    <div class="modal-box">
+      <button class="close" onclick="closeModal('metricModal')">×</button>
+      <p class="eyebrow">PERFORMANCE</p><h2>Nouvelle mesure</h2>
+      <form id="metricForm">
+        <label>Date<input id="metricDate" type="date" required></label>
+        <div class="form-row"><label>Mesure<select id="metricType"><option value="weight">Poids</option><option value="bench">Développé couché</option><option value="squat">Squat</option><option value="deadlift">Soulevé de terre</option><option value="sprint10">Sprint 10 m</option><option value="sprint30">Sprint 30 m</option><option value="pullups">Tractions</option></select></label><label>Valeur<input id="metricValue" type="number" step="0.01" required placeholder="75"></label></div>
+        <label>Unité<select id="metricUnit"><option value="kg">kg</option><option value="s">secondes</option><option value="reps">répétitions</option></select></label>
+        <label>Commentaire<textarea id="metricNote" placeholder="Comment tu t'es senti ?"></textarea></label>
+        <button class="primary-btn full" type="submit">Enregistrer la performance</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="script.js"></script>
+</body>
+</html>
